@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # 后端服务
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: jobfit-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/uploads:/app/uploads  # 持久化上传文件
+    environment:
+      - SECRET_KEY=jobfit-docker-secret-key-2024
+      - DEBUG=False
+      - LLM_API_URL=http://host.docker.internal:11434/api/chat  # 连接宿主机 Ollama
+      - LLM_MODEL=qwen2.5:7b
+      - LLM_TEMPERATURE=0.7
+      - OCR_ENABLED=True
+      - TESSERACT_PATH=/usr/bin/tesseract  # Docker 内 Tesseract 路径
+    restart: unless-stopped
+    networks:
+      - jobfit-network
+
+  # 前端服务
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: jobfit-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - jobfit-network
+
+networks:
+  jobfit-network:
+    driver: bridge
